@@ -9,7 +9,10 @@ fn main() {
         // Read command from user
         let mut user_command = String::new();
         match io::stdin().read_line(&mut user_command) {
-            Ok(_) => println!("{}: command not found", user_command.trim()),
+            Ok(_) => match user_command.trim() {
+                "exit" => break,
+                _ => println!("{}: command not found", user_command.trim()),
+            },
             Err(error) => println!("Error {error}"),
         }
     }
