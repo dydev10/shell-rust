@@ -2,6 +2,8 @@
 use std::io::{self, Write};
 
 fn main() {
+    let builtins = ["exit", "echo", "type"];
+
     loop {
         print!("$ ");
         io::stdout().flush().unwrap();
@@ -17,6 +19,13 @@ fn main() {
                 } else if command.starts_with("echo ") {
                     let content = command.strip_prefix("echo ").unwrap();
                     println!("{}", content);
+                } else if command.starts_with("type ") {
+                    let content = command.strip_prefix("type ").unwrap();
+                    if builtins.contains(&content) {
+                        println!("{content} is a shell builtin",);
+                    } else {
+                        println!("{}: not found", content);
+                    }
                 } else {
                     println!("{}: command not found", user_command.trim());
                 }
