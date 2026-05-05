@@ -37,7 +37,7 @@ fn main() {
                             // TODO: Add exec check
                             if is_present && is_file {
                                 is_found = true;
-                                println!("{content} is {}", path.to_str().unwrap());
+                                println!("{content} is {}", exec_path.to_str().unwrap());
                             }
                         }
 
