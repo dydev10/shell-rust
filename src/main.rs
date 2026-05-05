@@ -5,6 +5,8 @@ use std::os::unix::fs::PermissionsExt;
 use std::path::PathBuf;
 use std::process::Command;
 
+const BUILTINS: [&str; 3] = ["exit", "echo", "type"];
+
 fn is_exec(path: &PathBuf) -> bool {
     // #[cfg(unix)]
     match std::fs::metadata(path) {
@@ -54,6 +56,10 @@ fn get_exec_path(exec: &str) -> Option<PathBuf> {
     found
 }
 
+fn is_builtin_command(command: &str) -> bool {
+    BUILTINS.contains(&command)
+}
+
 fn is_exec_command(command: &str) -> bool {
     let command_split: Vec<&str> = command.split(" ").collect();
     let exec_name = command_split[0];
@@ -61,16 +67,42 @@ fn is_exec_command(command: &str) -> bool {
     get_exec_path(exec_name).is_some()
 }
 
-fn run_exec(args: Vec<&str>) {
-    Command::new(args[0])
-        .args(&args[1..])
+fn run_builtin_command(program: &str, args: &[&str]) -> bool {
+    match program {
+        "exit" => true,
+        "echo" => {
+            //
+            let content = args.join(" ");
+            println!("{}", content);
+            false
+        }
+        "type" => {
+            //
+            if BUILTINS.contains(&args[0]) {
+                println!("{} is a shell builtin", &args[0]);
+            } else {
+                match get_exec_path(args[0]) {
+                    Some(path) => println!("{} is {}", &args[0], path.to_str().unwrap()),
+                    None => println!("{}: not found", &args[0]),
+                }
+            }
+            false
+        }
+        _ => true, // exit on unknown command send as builtin
+    }
+}
+
+fn run_exec_command(program: &str, args: &[&str]) -> bool {
+    Command::new(program)
+        .args(args)
         .status()
         .expect("run_exec: failed to run executable");
+
+    // to follow run command interface?
+    false
 }
 
 fn main() {
-    let builtins = ["exit", "echo", "type"];
-
     loop {
         print!("$ ");
         io::stdout().flush().unwrap();
@@ -80,25 +112,20 @@ fn main() {
         match io::stdin().read_line(&mut user_command) {
             Ok(_) => {
                 let command = user_command.trim();
+                let command_split: Vec<&str> = command.split(" ").collect();
+                let program: &str = command_split[0];
+                let args = &command_split[1..];
 
-                if command == "exit" {
-                    break;
-                } else if command.starts_with("echo ") {
-                    let content = command.strip_prefix("echo ").unwrap();
-                    println!("{}", content);
-                } else if command.starts_with("type ") {
-                    let content = command.strip_prefix("type ").unwrap();
-                    if builtins.contains(&content) {
-                        println!("{content} is a shell builtin",);
-                    } else {
-                        match get_exec_path(content) {
-                            Some(path) => println!("{content} is {}", path.to_str().unwrap()),
-                            None => println!("{}: not found", content),
-                        }
-                    }
+                if is_builtin_command(program) {
+                    if run_builtin_command(program, args) {
+                        // exit commands trigger this break
+                        break;
+                    };
                 } else if is_exec_command(command) {
-                    let args: Vec<&str> = command.split(" ").collect();
-                    run_exec(args);
+                    if run_exec_command(program, args) {
+                        // not used but maybe later
+                        break;
+                    };
                 } else {
                     println!("{}: command not found", user_command.trim());
                 }
