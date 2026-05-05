@@ -70,13 +70,13 @@ fn is_exec_command(command: &str) -> bool {
 }
 
 fn run_builtin_command(program: &str, args: &[&str]) -> bool {
+    let mut exit = false;
     match program {
-        "exit" => true,
+        "exit" => exit = true,
         "echo" => {
             //
             let content = args.join(" ");
             println!("{}", content);
-            false
         }
         "type" => {
             //
@@ -88,29 +88,38 @@ fn run_builtin_command(program: &str, args: &[&str]) -> bool {
                     None => println!("{}: not found", &args[0]),
                 }
             }
-            false
         }
         "pwd" => {
             //
             match std::env::current_dir() {
                 Ok(dir) => {
                     println!("{}", dir.to_str().unwrap());
-                    false
                 }
                 Err(e) => {
                     eprintln!("pwd:: failed to read current dir: {}", e);
-                    true // crash on unxpected error
+                    exit = true; // crash on unxpected error
                 }
             }
         }
         "cd" => {
             //
-            // set_current_dir handles relative paths
-            match std::env::set_current_dir(args[0]) {
-                Ok(_) => false,
-                Err(_) => {
-                    println!("cd: {}: No such file or directory", &args[0]);
-                    false
+            if args[0] == "~" {
+                match std::env::home_dir() {
+                    Some(home) => match std::env::set_current_dir(home) {
+                        Ok(_) => (),
+                        Err(_) => println!("cd:: ~:: failed to switch to home dir"),
+                    },
+                    None => {
+                        eprintln!("cd:: ~:: home dir not found, ignoring cd");
+                    }
+                }
+            } else {
+                // set_current_dir handles relative paths
+                match std::env::set_current_dir(args[0]) {
+                    Ok(_) => (),
+                    Err(_) => {
+                        println!("cd: {}: No such file or directory", &args[0]);
+                    }
                 }
             }
         }
@@ -121,17 +130,17 @@ fn run_builtin_command(program: &str, args: &[&str]) -> bool {
             match std::env::home_dir() {
                 Some(dir) => {
                     println!("{}", dir.to_str().unwrap());
-                    false
                 }
                 None => {
                     eprintln!("hwd:: no home dir found");
-                    false
                 }
             }
         }
 
-        _ => true, // exit on unknown command send as builtin
-    }
+        _ => exit = true, // exit on unknown command send as builtin
+    };
+
+    exit
 }
 
 fn run_exec_command(program: &str, args: &[&str]) -> bool {
