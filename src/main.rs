@@ -3,6 +3,7 @@ use std::io::{self, Write};
 // #[cfg(unix)]
 use std::os::unix::fs::PermissionsExt;
 use std::path::PathBuf;
+use std::process::Command;
 
 fn is_exec(path: &PathBuf) -> bool {
     // #[cfg(unix)]
@@ -60,6 +61,13 @@ fn is_exec_command(command: &str) -> bool {
     get_exec_path(exec_name).is_some()
 }
 
+fn run_exec(args: Vec<&str>) {
+    Command::new(args[0])
+        .args(&args[1..])
+        .status()
+        .expect("run_exec: failed to run executable");
+}
+
 fn main() {
     let builtins = ["exit", "echo", "type"];
 
@@ -89,8 +97,8 @@ fn main() {
                         }
                     }
                 } else if is_exec_command(command) {
-                    // fn run_exec();
-                    println!("Exec comand")
+                    let args: Vec<&str> = command.split(" ").collect();
+                    run_exec(args);
                 } else {
                     println!("{}: command not found", user_command.trim());
                 }
