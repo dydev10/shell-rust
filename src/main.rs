@@ -5,7 +5,7 @@ use std::os::unix::fs::PermissionsExt;
 use std::path::PathBuf;
 use std::process::Command;
 
-const BUILTINS: [&str; 3] = ["exit", "echo", "type"];
+const BUILTINS: [&str; 5] = ["exit", "echo", "type", "pwd", "hwd"];
 
 fn is_exec(path: &PathBuf) -> bool {
     // #[cfg(unix)]
@@ -87,6 +87,32 @@ fn run_builtin_command(program: &str, args: &[&str]) -> bool {
                 }
             }
             false
+        }
+        "pwd" => {
+            //
+            match std::env::current_dir() {
+                Ok(dir) => {
+                    println!("{}", dir.to_str().unwrap());
+                    false
+                }
+                Err(e) => {
+                    eprintln!("pwd:: failed to read current dir: {}", e);
+                    true // crash on unxpected error
+                }
+            }
+        }
+        "hwd" => {
+            //
+            match std::env::home_dir() {
+                Some(dir) => {
+                    println!("{}", dir.to_str().unwrap());
+                    false
+                }
+                None => {
+                    eprintln!("hwd:: no home dir found");
+                    false
+                }
+            }
         }
         _ => true, // exit on unknown command send as builtin
     }
