@@ -105,6 +105,7 @@ fn run_builtin_command(program: &str, args: &[&str]) -> bool {
         }
         "cd" => {
             //
+            // set_current_dir handles relative paths
             match std::env::set_current_dir(args[0]) {
                 Ok(_) => false,
                 Err(_) => {
