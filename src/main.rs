@@ -1,5 +1,6 @@
 #[allow(unused_imports)]
 use std::io::{self, Write};
+use std::path::PathBuf;
 
 fn main() {
     let builtins = ["exit", "echo", "type"];
@@ -24,7 +25,25 @@ fn main() {
                     if builtins.contains(&content) {
                         println!("{content} is a shell builtin",);
                     } else {
-                        println!("{}: not found", content);
+                        let paths = std::env::var_os("PATH").unwrap();
+                        let path_list: Vec<PathBuf> = std::env::split_paths(&paths).collect();
+                        let mut is_found = false;
+                        for path in path_list {
+                            let exec_path = path.join(content);
+
+                            let is_present = exec_path.exists();
+                            let is_file = exec_path.is_file();
+                            // let is_executable = exec_path.is_file();
+                            // TODO: Add exec check
+                            if is_present && is_file {
+                                is_found = true;
+                                println!("{content} is {}", path.to_str().unwrap());
+                            }
+                        }
+
+                        if !is_found {
+                            println!("{}: not found", content);
+                        }
                     }
                 } else {
                     println!("{}: command not found", user_command.trim());
