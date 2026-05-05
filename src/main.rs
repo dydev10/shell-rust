@@ -16,10 +16,7 @@ fn is_exec(path: &PathBuf) -> bool {
 
             owner_exec || group_exec || other_exec
         }
-        Err(_) => {
-            eprintln!("is_exec:: Can't read metadata");
-            false
-        }
+        Err(_) => false,
     }
 
     // #[cfg(windows)]
@@ -36,10 +33,7 @@ fn is_exec(path: &PathBuf) -> bool {
     //                 .iter()
     //                 .any(|e| e.eq_ignore_ascii_case(&ext_with_dot))
     //         }
-    //         None => {
-    //             eprintln!("is_exec:: Can't read extension");
-    //             false
-    //         }
+    //         None => false,
     //     }
     // }
 }
