@@ -4,6 +4,7 @@ use std::os::unix::fs::PermissionsExt;
 use std::path::PathBuf;
 
 fn is_exec(path: &PathBuf) -> bool {
+    #[cfg(unix)]
     match std::fs::metadata(path) {
         Ok(metadata) => {
             let mode = metadata.permissions().mode();
@@ -17,6 +18,27 @@ fn is_exec(path: &PathBuf) -> bool {
         Err(_) => {
             eprintln!("is_exec:: Can't read metadata");
             false
+        }
+    }
+
+    #[cfg(windows)]
+    {
+        let pathext =
+            std::env::var("PATHEXT").unwrap_or_else(|_| ".COM;.EXE;.BAT;.CMD".to_string());
+        let exec_extensions: Vec<&str> = pathext.split(";").collect();
+        let file_ext = path.extension().and_then(|e| e.to_str());
+        match file_ext {
+            Some(ext) => {
+                let uppercased = ext.to_ascii_uppercase();
+                let ext_with_dot = format!(".{uppercased}");
+                exec_extensions
+                    .iter()
+                    .any(|e| e.eq_ignore_ascii_case(&ext_with_dot))
+            }
+            None => {
+                eprintln!("is_exec:: Can't read extension");
+                false
+            }
         }
     }
 }
