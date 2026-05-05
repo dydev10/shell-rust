@@ -1,6 +1,25 @@
 #[allow(unused_imports)]
 use std::io::{self, Write};
+use std::os::unix::fs::PermissionsExt;
 use std::path::PathBuf;
+
+fn is_exec(path: &PathBuf) -> bool {
+    match std::fs::metadata(path) {
+        Ok(metadata) => {
+            let mode = metadata.permissions().mode();
+
+            let owner_exec = mode & 0o100 != 0; // bit 6
+            let group_exec = mode & 0o010 != 0; // bit 3
+            let other_exec = mode & 0o001 != 0; // bit 0
+
+            owner_exec || group_exec || other_exec
+        }
+        Err(_) => {
+            eprintln!("is_exec:: Can't read metadata");
+            false
+        }
+    }
+}
 
 fn main() {
     let builtins = ["exit", "echo", "type"];
@@ -33,12 +52,13 @@ fn main() {
 
                             let is_present = exec_path.exists();
                             let is_file = exec_path.is_file();
-                            // let is_executable = exec_path.is_file();
-                            // TODO: Add exec check
                             if is_present && is_file {
-                                is_found = true;
-                                println!("{content} is {}", exec_path.to_str().unwrap());
-                                break;
+                                let is_executable = is_exec(&exec_path);
+                                if is_executable {
+                                    is_found = true;
+                                    println!("{content} is {}", exec_path.to_str().unwrap());
+                                    break;
+                                }
                             }
                         }
 
