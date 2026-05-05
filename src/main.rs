@@ -25,7 +25,7 @@ fn main() {
                     if builtins.contains(&content) {
                         println!("{content} is a shell builtin",);
                     } else {
-                        let paths = std::env::var_os("PATH").unwrap();
+                        let paths = std::env::var("PATH").unwrap();
                         let path_list: Vec<PathBuf> = std::env::split_paths(&paths).collect();
                         let mut is_found = false;
                         for path in path_list {
