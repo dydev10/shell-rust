@@ -38,6 +38,28 @@ fn is_exec(path: &PathBuf) -> bool {
     // }
 }
 
+fn get_exec_path(exec: &str) -> Option<PathBuf> {
+    let paths = std::env::var("PATH").unwrap();
+    let path_list: Vec<PathBuf> = std::env::split_paths(&paths).collect();
+    let mut found = None;
+    for path in path_list {
+        let exec_path = path.join(exec);
+        let is_executable = is_exec(&exec_path);
+        if is_executable {
+            found = Some(exec_path);
+            break;
+        }
+    }
+    found
+}
+
+fn is_exec_command(command: &str) -> bool {
+    let command_split: Vec<&str> = command.split(" ").collect();
+    let exec_name = command_split[0];
+
+    get_exec_path(exec_name).is_some()
+}
+
 fn main() {
     let builtins = ["exit", "echo", "type"];
 
@@ -61,22 +83,14 @@ fn main() {
                     if builtins.contains(&content) {
                         println!("{content} is a shell builtin",);
                     } else {
-                        let paths = std::env::var("PATH").unwrap();
-                        let path_list: Vec<PathBuf> = std::env::split_paths(&paths).collect();
-                        let mut is_found = false;
-                        for path in path_list {
-                            let exec_path = path.join(content);
-                            let is_executable = is_exec(&exec_path);
-                            if is_executable {
-                                is_found = true;
-                                println!("{content} is {}", exec_path.to_str().unwrap());
-                                break;
-                            }
-                        }
-                        if !is_found {
-                            println!("{}: not found", content);
+                        match get_exec_path(content) {
+                            Some(path) => println!("{content} is {}", path.to_str().unwrap()),
+                            None => println!("{}: not found", content),
                         }
                     }
+                } else if is_exec_command(command) {
+                    // fn run_exec();
+                    println!("Exec comand")
                 } else {
                     println!("{}: command not found", user_command.trim());
                 }
