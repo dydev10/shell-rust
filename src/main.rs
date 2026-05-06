@@ -116,11 +116,8 @@ fn is_builtin_command(command: &str) -> bool {
     BUILTINS.contains(&command)
 }
 
-fn is_exec_command(command: &str) -> bool {
-    let command_split: Vec<&str> = command.split(" ").collect();
-    let exec_name = command_split[0];
-
-    get_exec_path(exec_name).is_some()
+fn is_exec_command(program: &str) -> bool {
+    get_exec_path(program).is_some()
 }
 
 fn run_builtin_command(program: &str, args: Vec<&str>) -> bool {
