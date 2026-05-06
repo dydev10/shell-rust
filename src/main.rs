@@ -1,7 +1,7 @@
 #[allow(unused_imports)]
 use std::io::{self, Write};
 
-use shell_rust::run;
+mod shell;
 
 fn main() {
     loop {
@@ -12,7 +12,7 @@ fn main() {
         let mut user_command = String::new();
         match io::stdin().read_line(&mut user_command) {
             Ok(_) => {
-                if run(user_command).is_err() {
+                if shell::run(user_command).is_err() {
                     break;
                 }
             }
