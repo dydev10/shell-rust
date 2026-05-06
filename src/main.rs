@@ -14,7 +14,7 @@ const ARG_SEPARATOR: char = ' ';
 enum CommandParseState {
     Normal,
     InSingleQuote,
-    // InDoubleQuote,
+    InDoubleQuote,
 }
 
 fn tokenize(input: &str) -> Vec<String> {
@@ -25,6 +25,7 @@ fn tokenize(input: &str) -> Vec<String> {
     for c in input.chars() {
         match (&state, c) {
             (CommandParseState::Normal, '\'') => state = CommandParseState::InSingleQuote,
+            (CommandParseState::Normal, '"') => state = CommandParseState::InDoubleQuote,
             (CommandParseState::Normal, ARG_SEPARATOR) => {
                 // push the current token and start new token
                 if !&current.is_empty() {
@@ -34,6 +35,8 @@ fn tokenize(input: &str) -> Vec<String> {
             }
 
             (CommandParseState::InSingleQuote, '\'') => state = CommandParseState::Normal,
+
+            (CommandParseState::InDoubleQuote, '"') => state = CommandParseState::Normal,
 
             (_, ch) => current.push(ch),
         }
