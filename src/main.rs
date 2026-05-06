@@ -8,7 +8,43 @@ use std::process::Command;
 const BUILTINS: [&str; 6] = [
     "exit", "echo", "type", "pwd", "cd", /* Extra builtins by me */ "hwd",
 ];
-const ARG_SEPARATOR: &str = " ";
+const ARG_SEPARATOR: char = ' ';
+
+#[derive(PartialEq)]
+enum CommandParseState {
+    Normal,
+    InSingleQuote,
+    // InDoubleQuote,
+}
+
+fn tokenize(input: &str) -> Vec<String> {
+    let mut tokens: Vec<String> = Vec::new();
+    let mut current = String::new();
+    let mut state = CommandParseState::Normal;
+
+    for c in input.chars() {
+        match (&state, c) {
+            (CommandParseState::Normal, '\'') => state = CommandParseState::InSingleQuote,
+            (CommandParseState::Normal, ARG_SEPARATOR) => {
+                // push the current token and start new token
+                if !&current.is_empty() {
+                    tokens.push(String::from(&current));
+                    current.clear();
+                }
+            }
+
+            (CommandParseState::InSingleQuote, '\'') => state = CommandParseState::Normal,
+
+            (_, ch) => current.push(ch),
+        }
+    }
+
+    if !current.is_empty() {
+        tokens.push(String::from(&current));
+    }
+
+    tokens
+}
 
 fn is_exec(path: &PathBuf) -> bool {
     // #[cfg(unix)]
@@ -70,58 +106,13 @@ fn is_exec_command(command: &str) -> bool {
     get_exec_path(exec_name).is_some()
 }
 
-fn is_string_arg(arg: &str) -> bool {
-    let mut is_it = false;
-    if arg.starts_with("'") {
-        is_it = true;
-    }
-    is_it
-}
-
-fn collapse_args_whitespace(args: &[&str]) -> String {
-    args.iter()
-        .copied()
-        .filter(|a| !a.is_empty())
-        .collect::<Vec<&str>>()
-        .join(ARG_SEPARATOR)
-}
-
-fn parse_string_args(args: &[&str]) -> String {
-    let args_concat = args.join(ARG_SEPARATOR);
-    let mut closed = false;
-    let mut parsed = String::new();
-
-    for (i, c) in args_concat.chars().enumerate() {
-        if i == 0 && c == '\'' {
-            continue;
-        }
-        if c == '\'' {
-            closed = !closed;
-            break;
-        }
-
-        parsed.push(c);
-    }
-
-    if closed {
-        return parsed;
-    }
-
-    collapse_args_whitespace(args)
-}
-
-fn run_builtin_command(program: &str, args: &[&str]) -> bool {
+fn run_builtin_command(program: &str, args: Vec<&str>) -> bool {
     let mut exit = false;
     match program {
         "exit" => exit = true,
         "echo" => {
             //
-            let content = if is_string_arg(args[0]) {
-                parse_string_args(args)
-            } else {
-                collapse_args_whitespace(args)
-            };
-            println!("{}", content);
+            println!("{}", args.join(ARG_SEPARATOR.to_string().as_str()));
         }
         "type" => {
             //
@@ -188,7 +179,7 @@ fn run_builtin_command(program: &str, args: &[&str]) -> bool {
     exit
 }
 
-fn run_exec_command(program: &str, args: &[&str]) -> bool {
+fn run_exec_command(program: &str, args: Vec<&str>) -> bool {
     Command::new(program)
         .args(args)
         .status()
@@ -208,9 +199,9 @@ fn main() {
         match io::stdin().read_line(&mut user_command) {
             Ok(_) => {
                 let command = user_command.trim();
-                let command_split: Vec<&str> = command.split(ARG_SEPARATOR).collect();
-                let program: &str = command_split[0];
-                let args = &command_split[1..];
+                let command_tokens = tokenize(command);
+                let program: &str = command_tokens[0].as_str();
+                let args: Vec<&str> = command_tokens[1..].iter().map(|arg| arg.as_str()).collect();
 
                 if is_builtin_command(program) {
                     if run_builtin_command(program, args) {
