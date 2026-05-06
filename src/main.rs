@@ -229,7 +229,7 @@ fn main() {
                         // exit commands trigger this break
                         break;
                     };
-                } else if is_exec_command(command) {
+                } else if is_exec_command(program) {
                     if run_exec_command(program, args) {
                         // not used but maybe later
                         break;
