@@ -8,6 +8,7 @@ use std::process::Command;
 const BUILTINS: [&str; 6] = [
     "exit", "echo", "type", "pwd", "cd", /* Extra builtins by me */ "hwd",
 ];
+const ARG_SEPARATOR: &str = " ";
 
 fn is_exec(path: &PathBuf) -> bool {
     // #[cfg(unix)]
@@ -69,13 +70,57 @@ fn is_exec_command(command: &str) -> bool {
     get_exec_path(exec_name).is_some()
 }
 
+fn is_string_arg(arg: &str) -> bool {
+    let mut is_it = false;
+    if arg.starts_with("'") {
+        is_it = true;
+    }
+    is_it
+}
+
+fn collapse_args_whitespace(args: &[&str]) -> String {
+    args.iter()
+        .copied()
+        .filter(|a| !a.is_empty())
+        .collect::<Vec<&str>>()
+        .join(ARG_SEPARATOR)
+}
+
+fn parse_string_args(args: &[&str]) -> String {
+    let args_concat = args.join(ARG_SEPARATOR);
+    let mut closed = false;
+    let mut parsed = String::new();
+
+    for (i, c) in args_concat.chars().enumerate() {
+        if i == 0 {
+            continue;
+        }
+        if c == '\'' {
+            closed = !closed;
+            break;
+        }
+
+        parsed.push(c);
+    }
+
+    if closed {
+        return parsed;
+    }
+
+    collapse_args_whitespace(args)
+}
+
 fn run_builtin_command(program: &str, args: &[&str]) -> bool {
     let mut exit = false;
     match program {
         "exit" => exit = true,
         "echo" => {
             //
-            let content = args.join(" ");
+            let content = if is_string_arg(args[0]) {
+                parse_string_args(args)
+            } else {
+                collapse_args_whitespace(args)
+            };
             println!("{}", content);
         }
         "type" => {
@@ -163,7 +208,7 @@ fn main() {
         match io::stdin().read_line(&mut user_command) {
             Ok(_) => {
                 let command = user_command.trim();
-                let command_split: Vec<&str> = command.split(" ").collect();
+                let command_split: Vec<&str> = command.split(ARG_SEPARATOR).collect();
                 let program: &str = command_split[0];
                 let args = &command_split[1..];
 
