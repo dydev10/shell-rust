@@ -199,6 +199,10 @@ fn main() {
         match io::stdin().read_line(&mut user_command) {
             Ok(_) => {
                 let command = user_command.trim();
+                if command.is_empty() {
+                    continue;
+                }
+
                 let command_tokens = tokenize(command);
                 let program: &str = command_tokens[0].as_str();
                 let args: Vec<&str> = command_tokens[1..].iter().map(|arg| arg.as_str()).collect();
