@@ -15,7 +15,7 @@ enum CommandParseState {
     Normal,
     InSingleQuote,
     InDoubleQuote,
-    InEscapeSeq,
+    InEscape,
 }
 
 fn tokenize(input: &str) -> Vec<String> {
@@ -27,7 +27,7 @@ fn tokenize(input: &str) -> Vec<String> {
         match (&state, c) {
             (CommandParseState::Normal, '\'') => state = CommandParseState::InSingleQuote,
             (CommandParseState::Normal, '"') => state = CommandParseState::InDoubleQuote,
-            (CommandParseState::Normal, '\\') => state = CommandParseState::InEscapeSeq,
+            (CommandParseState::Normal, '\\') => state = CommandParseState::InEscape,
             (CommandParseState::Normal, ARG_SEPARATOR) => {
                 // push the current token and start new token
                 if !&current.is_empty() {
@@ -40,7 +40,7 @@ fn tokenize(input: &str) -> Vec<String> {
 
             (CommandParseState::InDoubleQuote, '"') => state = CommandParseState::Normal,
 
-            (CommandParseState::InEscapeSeq, ch) => {
+            (CommandParseState::InEscape, ch) => {
                 current.push(ch);
                 state = CommandParseState::Normal;
             }
