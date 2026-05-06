@@ -16,6 +16,7 @@ enum CommandParseState {
     InSingleQuote,
     InDoubleQuote,
     InEscape,
+    InQuoteEscape,
 }
 
 fn tokenize(input: &str) -> Vec<String> {
@@ -39,10 +40,16 @@ fn tokenize(input: &str) -> Vec<String> {
             (CommandParseState::InSingleQuote, '\'') => state = CommandParseState::Normal,
 
             (CommandParseState::InDoubleQuote, '"') => state = CommandParseState::Normal,
+            (CommandParseState::InDoubleQuote, '\\') => state = CommandParseState::InQuoteEscape,
 
             (CommandParseState::InEscape, ch) => {
                 current.push(ch);
                 state = CommandParseState::Normal;
+            }
+
+            (CommandParseState::InQuoteEscape, ch) => {
+                current.push(ch);
+                state = CommandParseState::InDoubleQuote;
             }
 
             (_, ch) => current.push(ch),
