@@ -92,7 +92,7 @@ fn parse_string_args(args: &[&str]) -> String {
     let mut parsed = String::new();
 
     for (i, c) in args_concat.chars().enumerate() {
-        if i == 0 {
+        if i == 0 && c == '\'' {
             continue;
         }
         if c == '\'' {
